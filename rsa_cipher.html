@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>RSA</title>
+    <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+    <meta content="utf-8" http-equiv="encoding">
+</head>
+<body>
+<h3>
+    Se tiene un servicio del que se obtiene la llave publica (GET http://localhost:5000/)
+    para cifrar, se cifra el texto usando la libreria de javascript 'forge'  y se envia
+    el texto ya cifrado, (POST http://localhost:5000/ { message: "texto_cifrado" }) 
+</h3>
+
+Texto que se cifrara usando 'forge' (libreria para cifrar de javascript)
+y obteniendo la llave publica del servidor "http://localhost:5000/" (haciendo GET)
+<br>
+<textarea rows="8" cols="50" id="texto_sin_cifrar"></textarea>
+<textarea rows="8" cols="50" id="public_key"></textarea>
+<br>
+<button id="get_rsa">GET PUBLIC RSA</button>
+<br>
+Texto cifrado que se enviara a "http://localhost:5000/" (haciendo POST)
+<br>
+<textarea rows="3" cols="100" id="texto_cifrado"></textarea>
+<br>
+Texto descifrado que se recibe de "http://localhost:5000/" (haciendo POST)
+<br>
+<textarea rows="4" cols="100" id="texto_descifrado"></textarea>
+
+
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/node-forge@0.7.0/dist/forge.min.js"></script>
+
+<script type="text/javascript">
+$("#get_rsa").click(function(){
+    // get rsa public key
+    $.get("http://localhost:5000/", function(data, status){
+        var publicKey = forge.pki.publicKeyFromPem(data);
+        $("#public_key").val(data);
+        var secretMessage = $("#texto_sin_cifrar").val();
+        // cipher text with rsa public key
+        var encrypted = publicKey.encrypt(secretMessage, "RSA-OAEP", {
+            md: forge.md.sha256.create(),
+            mgf1: forge.mgf1.create()
+        });
+        // cipher text with base64 algorithm
+        var base64 = forge.util.encode64(encrypted);
+        $("#texto_cifrado").val(base64);
+        // send/post ciphered text and server return decripted text
+        $.post("http://localhost:5000/", { message: base64 }, function(result){
+            $("#texto_descifrado").val(result);
+        });
+    });
+}); 
+</script>
+
+</body>
+</html>
